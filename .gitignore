@@ -1,0 +1,5 @@
+*.log
+*.etl
+*.dmp
+UsbCRecovery-diagnostic-*.txt
+present-*.csv

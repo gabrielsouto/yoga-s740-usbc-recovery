@@ -1,0 +1,51 @@
+name: Possible matching case
+description: Report a similar USB-C failure and recovery result
+title: "[matching case] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only after reading the README. Any reset is performed at your own risk. Do not include serial numbers, personal paths, credentials, or proprietary binaries.
+  - type: input
+    id: model
+    attributes:
+      label: Exact notebook model
+      placeholder: Lenovo Yoga S740-14IIL
+    validations:
+      required: true
+  - type: input
+    id: bios
+    attributes:
+      label: BIOS version
+    validations:
+      required: true
+  - type: textarea
+    id: symptom
+    attributes:
+      label: Symptom and connected device
+      description: Describe whether the device was a hub, monitor, DisplayPort cable, charger, or another topology.
+    validations:
+      required: true
+  - type: textarea
+    id: ucsi
+    attributes:
+      label: UCSI and read-only command results
+      description: Include status, GET_CAPABILITY, GET_CONNECTOR_STATUS, and GET_ERROR_STATUS after removing personal information.
+    validations:
+      required: true
+  - type: dropdown
+    id: result
+    attributes:
+      label: Did Send 0 10003 recover the connector?
+      options:
+        - Yes, without reboot
+        - Yes, but only temporarily
+        - No
+        - I did not run it
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Include Windows version, whether a power cycle worked, and whether the failure repeats.

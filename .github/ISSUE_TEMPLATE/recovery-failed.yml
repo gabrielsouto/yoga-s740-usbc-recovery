@@ -1,0 +1,41 @@
+name: Recovery did not work
+description: Report a failed or incomplete recovery attempt
+title: "[recovery failed] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form only after reading the README. The scripts are experimental and use is at your own risk. Do not include serial numbers, personal paths, credentials, or proprietary binaries.
+  - type: input
+    id: model
+    attributes:
+      label: Exact notebook model
+    validations:
+      required: true
+  - type: input
+    id: bios
+    attributes:
+      label: BIOS version
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error, log excerpt, or exit code
+      description: Remove personal information before posting.
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Diagnostic summary
+      description: Include UCSI status, TestInterfaceEnabled status, tool path presence, and whether the expected device was connected.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps already tried
+      description: Include whether manual Send 0 10003 was attempted and what happened.
+    validations:
+      required: true
