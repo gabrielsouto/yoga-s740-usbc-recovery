@@ -1,63 +1,65 @@
 # Yoga S740 USB-C Recovery
 
-Uma ferramenta de diagnóstico e recuperação para um estado intermitente de USB-C/Thunderbolt observado no Lenovo Yoga S740-14IIL.
+**English** | [Português (Brasil)](README.pt-BR.md)
+
+A diagnostic and recovery tool for an intermittent USB-C/Thunderbolt failure state observed on the Lenovo Yoga S740-14IIL.
 
 > [!WARNING]
-> Este projeto é experimental, não é um driver oficial da Lenovo ou da Microsoft e não promete corrigir toda falha de USB-C. Qualquer pessoa que decidir usá-lo o fará por sua própria conta e risco. Não há garantia de recuperação, compatibilidade ou ausência de efeitos colaterais. Faça backup, mantenha um método alternativo de acesso ao computador e leia as limitações antes de executar qualquer reset.
+> This project is experimental. It is not an official Lenovo or Microsoft driver, and it does not claim to fix every USB-C failure. Anyone who chooses to use it does so entirely at their own risk. There is no guarantee of recovery, compatibility, or freedom from side effects. Back up your data, keep an alternative way to access the computer, and read the limitations before sending any reset command.
 
-## Resumo em uma frase
+## One-sentence summary
 
-No equipamento investigado, o Windows continuava mostrando UCSI, xHCI e Thunderbolt como funcionais, mas o conector USB-C não enumerava um hub ou monitor conectado; o comando UCSI `CONNECTOR_RESET` soft, enviado por `UcsiControl.exe Send 0 10003`, recuperou a porta sem reiniciar o computador.
+On the investigated laptop, Windows continued to report UCSI, xHCI, and Thunderbolt as healthy, but the USB-C connector did not enumerate a connected hub or monitor; sending a soft UCSI `CONNECTOR_RESET` with `UcsiControl.exe Send 0 10003` recovered the port without restarting the computer.
 
-## O que este repositório oferece
+## What this repository provides
 
-- um procedimento manual e auditável para testar a hipótese;
-- um script PowerShell de diagnóstico que gera um relatório sem arquivos pessoais;
-- um script de recuperação manual;
-- uma tarefa opcional no Agendador de Tarefas para verificar a porta no boot;
-- detecção por assinaturas de dispositivos conhecidas e configuráveis;
-- logs em `C:\ProgramData\UsbCRecovery\UsbCRecovery.log`;
-- instruções para instalar e remover a automação;
-- documentação da investigação, dos testes que falharam e das limitações.
+- a manual and auditable procedure for testing the hypothesis;
+- a PowerShell diagnostic script that creates a report without collecting personal files;
+- a manual recovery script;
+- an optional Scheduled Task that checks the port at boot;
+- configurable detection based on known device signatures;
+- logs at `C:\ProgramData\UsbCRecovery\UsbCRecovery.log`;
+- installation and removal instructions;
+- documentation of the investigation, failed tests, and limitations.
 
-O caminho recomendado é sempre: diagnóstico, teste manual, observação de mais de um ciclo de uso e somente depois instalação automática.
+The recommended path is always: diagnose first, test manually, observe the behavior over more than one usage cycle, and only then install the automatic recovery.
 
-## Escopo validado
+## Validated scope
 
-| Item | Evidência disponível |
+| Item | Available evidence |
 | --- | --- |
-| Notebook | Lenovo Yoga S740-14IIL |
-| Sistema investigado | Windows 11 x64 |
+| Laptop | Lenovo Yoga S740-14IIL |
+| Investigated operating system | Windows 11 x64 |
 | UCSI | `ACPI\USBC000\0`, status `OK` |
-| Cliente UCSI | `UcmUcsiAcpiClient.sys` |
-| BIOS observado | `BYCN39WW` |
-| Evidência com hub | `USB\VID_05E3&PID_0626*` e `USB\VID_0B95&PID_1790*` |
-| Evidência com DisplayPort | `DISPLAY\SAM730E*` |
-| Evidência com HDMI/hub | `DISPLAY\SAM730B*` |
-| Comando decisivo | `UcsiControl.exe Send 0 10003` |
-| Resultado observado | recuperação imediata da USB-C |
+| UCSI client | `UcmUcsiAcpiClient.sys` |
+| Observed BIOS | `BYCN39WW` |
+| Hub evidence | `USB\VID_05E3&PID_0626*` and `USB\VID_0B95&PID_1790*` |
+| DisplayPort evidence | `DISPLAY\SAM730E*` |
+| HDMI/hub evidence | `DISPLAY\SAM730B*` |
+| Decisive command | `UcsiControl.exe Send 0 10003` |
+| Observed result | immediate USB-C recovery |
 
-Esses dados descrevem um caso validado, não uma matriz de compatibilidade. Outro Yoga S740 pode ter outro BIOS, outra topologia, outra versão do Windows ou outro defeito.
+These data describe one validated case, not a compatibility matrix. Another Yoga S740 may have a different BIOS, topology, Windows version, or underlying failure.
 
-## Sintoma compatível
+## Compatible symptom
 
-O caso investigado normalmente se apresentava assim:
+The investigated case usually appeared as follows:
 
-1. o notebook iniciava com um hub USB-C ou um cabo USB-C para DisplayPort conectado;
-2. a USB-C ficava sem dados/vídeo, embora o sistema continuasse iniciado;
-3. os dispositivos e drivers principais ainda apareciam como `OK`;
-4. desconectar e reconectar o hub não criava novos dispositivos PnP;
-5. reiniciar Thunderbolt, xHCI, hub raiz ou o dispositivo UCSI não resolvia;
-6. um desligamento físico completo conseguia recuperar a porta;
-7. `CONNECTOR_RESET` soft recuperava a porta sem reinicialização.
+1. the laptop started with a USB-C hub or USB-C-to-DisplayPort cable connected;
+2. USB-C provided no data or video even though Windows finished starting;
+3. the main devices and drivers still appeared as `OK`;
+4. disconnecting and reconnecting the hub did not create new PnP devices;
+5. restarting Thunderbolt, xHCI, the root hub, or the UCSI device did not recover the connection;
+6. a complete physical power cycle could recover the port;
+7. a soft `CONNECTOR_RESET` recovered the port without restarting Windows.
 
-Se o seu sintoma for diferente, especialmente se houver dano físico, sobretemperatura, falha de carregamento, líquido, cheiro de queimado ou erro persistente no Gerenciador de Dispositivos, não trate este projeto como solução.
+If your symptoms differ, especially if there is physical damage, overheating, charging failure, liquid exposure, a burning smell, or a persistent Device Manager error, do not treat this project as a solution.
 
-## Teste manual mais seguro
+## Safest manual test
 
-### 1. Confirme o equipamento
+### 1. Confirm the computer model
 
-Abra PowerShell como administrador e execute:
+Open PowerShell as Administrator and run:
 
 ~~~powershell
 Get-CimInstance Win32_ComputerSystem |
@@ -70,11 +72,11 @@ Get-PnpDevice -InstanceId 'ACPI\USBC000\0' |
     Format-Table Status,Class,FriendlyName,InstanceId -Auto
 ~~~
 
-Não use o reset automático em outro modelo sem entender e aceitar o risco. O script bloqueia modelos não validados por padrão.
+Do not use the automatic reset on another model without understanding and accepting the risk. The script blocks unvalidated models by default.
 
-### 2. Confirme o UCSI e o modo de teste
+### 2. Confirm UCSI and the test interface
 
-O script espera encontrar:
+The script expects:
 
 ~~~text
 ACPI\USBC000\0
@@ -82,14 +84,14 @@ Status: OK
 TestInterfaceEnabled: 1
 ~~~
 
-Verifique o valor:
+Check the value:
 
 ~~~powershell
 $ucsiParameters = 'HKLM:\SYSTEM\CurrentControlSet\Enum\ACPI\USBC000\0\Device Parameters'
 Get-ItemProperty -Path $ucsiParameters -Name TestInterfaceEnabled
 ~~~
 
-Se o valor não existir, o procedimento usado na investigação foi:
+If the value does not exist, this is the procedure used during the investigation:
 
 ~~~powershell
 $ucsiParameters = 'HKLM:\SYSTEM\CurrentControlSet\Enum\ACPI\USBC000\0\Device Parameters'
@@ -97,28 +99,28 @@ New-Item -Path $ucsiParameters -Force | Out-Null
 New-ItemProperty -Path $ucsiParameters -Name TestInterfaceEnabled -PropertyType DWord -Value 1 -Force
 ~~~
 
-Essa alteração escreve no Registro do Windows. Faça um ponto de restauração ou exporte a chave antes, entenda como desfazer a alteração e só prossiga se aceitar o risco. O instalador deste repositório salva o valor anterior e tenta restaurá-lo na desinstalação.
+This changes the Windows Registry. Create a restore point or export the registry key first, understand how to undo the change, and proceed only if you accept the risk. This repository's installer records the previous value and attempts to restore it during uninstallation.
 
-### 3. Obtenha UcsiControl.exe de forma legítima
+### 3. Obtain UcsiControl.exe legitimately
 
-O arquivo não é distribuído neste repositório. Ele pertence ao conjunto de ferramentas de teste USB da Microsoft e pode estar disponível em uma instalação legítima do pacote MUTT/USBTest. A documentação oficial da Microsoft descreve o pacote, os comandos UCSI e o local típico usado no caso investigado:
+The executable is not distributed in this repository. It belongs to Microsoft's USB test tooling and may be available through a legitimate installation of the MUTT/USBTest package. Microsoft's official documentation describes the package, UCSI commands, and the typical installation path used in the investigated case:
 
 - [USB-C Connector System Software Interface (UCSI) Driver](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/ucsi)
 - [Tools in the MUTT Software Package](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/mutt-software-package)
 
-Não baixe executáveis de sites de terceiros, não aceite versões modificadas e não coloque uma cópia proprietária no repositório sem licença de redistribuição.
+Do not download executables from third-party websites, accept modified versions, or add a proprietary copy to this repository without redistribution rights.
 
-O caminho esperado pelo script é:
+The path expected by the script is:
 
 ~~~text
 C:\Program Files (x86)\USBTest\x64\UcsiControl.exe
 ~~~
 
-Se a instalação legítima usar outro caminho, passe-o ao instalador ou ajuste `C:\ProgramData\UsbCRecovery\UsbCRecovery.config.json`.
+If your legitimate installation uses another path, pass it to the installer or edit `C:\ProgramData\UsbCRecovery\UsbCRecovery.config.json`.
 
-### 4. Faça leituras antes do reset
+### 4. Capture read-only information before resetting
 
-Com o hub ou monitor conectado e o problema presente, capture:
+With the hub or monitor connected and the failure present, capture:
 
 ~~~powershell
 $ucsi = 'C:\Program Files (x86)\USBTest\x64\UcsiControl.exe'
@@ -128,19 +130,19 @@ $ucsi = 'C:\Program Files (x86)\USBTest\x64\UcsiControl.exe'
 & $ucsi Send 0 13
 ~~~
 
-Os dois últimos comandos são usados aqui como leituras de estado/capacidade. Salve a saída para comparação. No caso investigado, `GET_CONNECTOR_STATUS` retornava `ConnectStatus=0` apesar de haver um dispositivo fisicamente conectado.
+These commands are used here to read capability, connector status, and error status. Save the output for comparison. In the investigated case, `GET_CONNECTOR_STATUS` reported `ConnectStatus=0` even though a device was physically connected.
 
-### 5. Envie o reset manual
+### 5. Send the manual reset
 
-Somente depois de confirmar o modelo, UCSI e o caminho do executável:
+Only after confirming the model, UCSI device, and executable path:
 
 ~~~powershell
 & 'C:\Program Files (x86)\USBTest\x64\UcsiControl.exe' Send 0 10003
 ~~~
 
-O `10003` é o `CONNECTOR_RESET` soft para o conector 1 na sintaxe da ferramenta. Não comece pelo `810003` hard reset: o soft reset foi suficiente no caso validado e o hard reset é uma intervenção mais agressiva.
+In the tool's syntax, `10003` is a soft `CONNECTOR_RESET` for connector 1. Do not start with the `810003` hard reset: the soft reset was sufficient in the validated case, while the hard reset is a more aggressive intervention.
 
-Depois aguarde alguns segundos e verifique se o hub ou monitor aparece:
+Wait a few seconds, then check whether the hub or monitor appears:
 
 ~~~powershell
 Get-PnpDevice -PresentOnly |
@@ -153,70 +155,70 @@ Get-PnpDevice -PresentOnly |
     Format-Table Status,Class,FriendlyName,InstanceId -Auto
 ~~~
 
-## Instalação da recuperação automática
+## Installing automatic recovery
 
-Use isto somente após o teste manual ser bem-sucedido e depois de aceitar que o comando será executado como `SYSTEM` no boot.
+Use this only after the manual test succeeds and after accepting that the command will run as `SYSTEM` during startup.
 
 ~~~powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 .\scripts\install.ps1 -EnableTestInterface
 ~~~
 
-O instalador:
+The installer:
 
-- copia os scripts para `C:\ProgramData\UsbCRecovery`;
-- cria o arquivo de configuração;
-- salva o valor anterior de `TestInterfaceEnabled`;
-- opcionalmente define `TestInterfaceEnabled=1`;
-- cria a tarefa `USB-C Recovery - Yoga S740`;
-- executa com conta `SYSTEM` e nível elevado;
-- espera 30 segundos;
-- verifica os dispositivos conhecidos;
-- espera mais 10 segundos se não encontrar evidência;
-- envia no máximo um `CONNECTOR_RESET` automático por inicialização;
-- espera 8 segundos e registra o resultado.
+- copies the scripts to `C:\ProgramData\UsbCRecovery`;
+- creates the configuration file;
+- records the previous `TestInterfaceEnabled` value;
+- optionally sets `TestInterfaceEnabled=1`;
+- creates the `USB-C Recovery - Yoga S740` Scheduled Task;
+- runs under the `SYSTEM` account with elevated privileges;
+- waits 30 seconds;
+- checks for known devices;
+- waits another 10 seconds if no evidence is found;
+- sends at most one automatic `CONNECTOR_RESET` per startup;
+- waits 8 seconds and logs the result.
 
-Se o executável estiver em outro caminho:
+If the executable is installed elsewhere:
 
 ~~~powershell
-.\scripts\install.ps1 -EnableTestInterface -UcsiControlPath 'D:\Ferramentas\USBTest\x64\UcsiControl.exe'
+.\scripts\install.ps1 -EnableTestInterface -UcsiControlPath 'D:\Tools\USBTest\x64\UcsiControl.exe'
 ~~~
 
-Por padrão, o instalador aceita somente `*Yoga S740-14IIL*` como modelo. Para uma investigação consciente em outro modelo, a validação pode ser desativada, mas isso aumenta o risco:
+By default, the installer accepts only `*Yoga S740-14IIL*` as a model. Model validation can be disabled for a deliberate investigation on another computer, but doing so increases the risk:
 
 ~~~powershell
 .\scripts\install.ps1 -EnableTestInterface -SkipModelValidation
 ~~~
 
-Não use essa opção apenas para contornar um erro sem entender a causa.
+Do not use this option merely to bypass an error without understanding its cause.
 
-## Uso manual após a instalação
+## Manual use after installation
 
-Quando a USB-C travar durante o uso:
+If USB-C becomes stuck during normal use:
 
 ~~~powershell
 & 'C:\ProgramData\UsbCRecovery\reset-usbc.ps1'
 ~~~
 
-Esse comando ignora a detecção de hub/monitor e envia diretamente o reset soft, mas ainda verifica o modelo, o dispositivo UCSI, o executável e `TestInterfaceEnabled`.
+This command skips hub/monitor detection and sends the soft reset directly, but it still checks the computer model, UCSI device, executable, and `TestInterfaceEnabled`.
 
-Para gerar um relatório:
+To generate a diagnostic report:
 
 ~~~powershell
 & 'C:\ProgramData\UsbCRecovery\diagnose.ps1'
 ~~~
 
-O relatório inclui modelo, BIOS, UCSI, drivers relacionados, configuração, assinaturas e comandos UCSI de leitura. Ele não coleta arquivos do usuário e não deve ser publicado sem revisão.
+The report includes the model, BIOS, UCSI device, related drivers, configuration, signatures, and read-only UCSI commands. It does not collect user files and should not be published without review.
 
-## Detecção configurável
+## Configurable detection
 
-O arquivo:
+The file:
 
 ~~~text
 C:\ProgramData\UsbCRecovery\UsbCRecovery.config.json
 ~~~
 
-contém as assinaturas que representam uma USB-C saudável no caso validado:
+contains the signatures that represent a healthy USB-C connection in the validated case:
 
 ~~~json
 {
@@ -229,9 +231,9 @@ contém as assinaturas que representam uma USB-C saudável no caso validado:
 }
 ~~~
 
-O detector considera suficiente encontrar qualquer uma delas. Isso é deliberadamente específico: procurar qualquer hub USB seria perigoso, porque pode haver hubs internos ou dispositivos USB que não provam que a porta problemática está funcionando.
+The detector considers any one of these signatures sufficient. This is intentionally specific: searching for any USB hub would be unsafe because the computer may contain internal hubs or unrelated USB devices that do not prove the affected port is working.
 
-Se você usa uma topologia diferente, faça primeiro um snapshot com:
+If your topology is different, first create a snapshot:
 
 ~~~powershell
 Get-PnpDevice -PresentOnly |
@@ -239,80 +241,81 @@ Get-PnpDevice -PresentOnly |
     Export-Csv .\present-devices.csv -NoTypeInformation -Encoding UTF8
 ~~~
 
-Altere as assinaturas somente quando souber que elas pertencem à conexão USB-C esperada.
+Change the signatures only when you know they belong to the expected USB-C connection.
 
-## Logs e códigos de saída
+## Logs and exit codes
 
-O log fica em:
+The log is stored at:
 
 ~~~text
 C:\ProgramData\UsbCRecovery\UsbCRecovery.log
 ~~~
 
-Os códigos principais do script são:
+The main script exit codes are:
 
-| Código | Significado |
+| Code | Meaning |
 | ---: | --- |
-| 0 | evidência encontrada ou recuperação concluída |
-| 1 | reset falhou ou evidência continuou ausente |
-| 2 | pré-requisito ausente, UCSI indisponível ou modelo não validado |
+| 0 | evidence was found or recovery completed |
+| 1 | reset failed or evidence remained absent |
+| 2 | missing prerequisite, unavailable UCSI, or unvalidated model |
 
-O script não fica tentando indefinidamente. O objetivo é evitar um ciclo de resets no boot.
+The script does not retry indefinitely. This is designed to prevent a reset loop during startup.
 
-## Desinstalação
+## Uninstallation
 
-Abra PowerShell como administrador:
+Open PowerShell as Administrator:
 
 ~~~powershell
 .\scripts\uninstall.ps1
 ~~~
 
-A desinstalação remove a tarefa e os arquivos de `C:\ProgramData\UsbCRecovery`. Se o instalador alterou `TestInterfaceEnabled`, ele tenta restaurar o valor anterior. Revise o log antes de apagar qualquer evidência que possa ajudar no diagnóstico.
+Uninstallation removes the Scheduled Task and the files under `C:\ProgramData\UsbCRecovery`. If the installer changed `TestInterfaceEnabled`, it attempts to restore the previous value. Review the log before deleting any evidence that may help with diagnosis.
 
-## O que foi testado
+## What was tested
 
-| Intervenção | Resultado observado |
+| Intervention | Observed result |
 | --- | --- |
-| reinício do dispositivo Thunderbolt `8A17` | não recuperou |
-| reinício do controlador xHCI `8A13` | não recuperou |
-| reinício do USB Root Hub | não recuperou |
-| desabilitar/habilitar xHCI e Thunderbolt | não recuperou |
-| reinício do dispositivo UCSI `ACPI\USBC000\0` | não recuperou |
-| UCSI `PPM_RESET`, `Send 0 1` | não recuperou |
-| UCSI `CONNECTOR_RESET` soft, `Send 0 10003` | recuperou imediatamente |
+| restart Thunderbolt device `8A17` | did not recover |
+| restart xHCI controller `8A13` | did not recover |
+| restart USB Root Hub | did not recover |
+| disable/enable xHCI and Thunderbolt | did not recover |
+| restart UCSI device `ACPI\USBC000\0` | did not recover |
+| UCSI `PPM_RESET`, `Send 0 1` | did not recover |
+| soft UCSI `CONNECTOR_RESET`, `Send 0 10003` | recovered immediately |
 
-O resultado aponta para um estado travado na camada lógica do conector/Type-C/PD/UCSI/firmware, mas não prova sozinho uma causa de hardware ou firmware.
+The result points to a stuck state in the connector/Type-C/PD/UCSI/firmware logic, but it does not by itself prove a hardware or firmware root cause.
 
-## Segurança e limites
+## Safety and limitations
 
-- O script roda elevado e pode ser executado como `SYSTEM`; trate-o como software privilegiado.
-- O reset pode interromper carregamento, vídeo, USB, DisplayPort Alt Mode ou negociações USB Power Delivery em andamento.
-- Não há garantia de que a operação seja segura para outro notebook, dock, carregador ou controlador.
-- Não distribuímos `UcsiControl.exe`, drivers, firmware, BIOS modificado ou arquivos da Microsoft.
-- Não há driver de kernel neste projeto.
-- Não há promessa de correção permanente: o reset recupera um estado observado, mas não altera o firmware.
-- Se o notebook estiver sem nada conectado, a ausência de evidência não diferencia “porta saudável sem dispositivo” de “porta travada”; nesse caso, não instale a automação sem adaptar o detector.
-- Não execute resets repetidos para tentar recuperar um hardware que apresenta sintomas elétricos ou físicos.
-- Leia o código, revise as assinaturas e mantenha um plano de recuperação fora da USB-C.
+- The script runs elevated and may run as `SYSTEM`; treat it as privileged software.
+- Resetting may interrupt charging, video, USB, DisplayPort Alt Mode, or an active USB Power Delivery negotiation.
+- There is no guarantee that the operation is safe for another laptop, dock, charger, or controller.
+- This repository does not distribute `UcsiControl.exe`, drivers, firmware, modified BIOS files, or Microsoft files.
+- This project does not include a kernel driver.
+- This is not a permanent-fix claim: the reset recovers an observed state but does not modify the firmware.
+- If the laptop starts with nothing connected, the absence of known evidence cannot distinguish “healthy port with no device” from “stuck port”; do not install the automation in that scenario without adapting the detector.
+- Do not send repeated resets in an attempt to recover hardware showing electrical or physical symptoms.
+- Read the code, review the signatures, and keep a recovery path that does not depend on USB-C.
 
-## Compatibilidade e relatos
+## Compatibility reports
 
-Relatos de outros Yoga S740 são bem-vindos, mas devem separar claramente:
+Reports from other Yoga S740 owners are welcome, but they should clearly separate:
 
-1. modelo exato e BIOS;
-2. versão do Windows;
-3. dispositivo conectado;
-4. estado do UCSI;
-5. saída de `GET_CONNECTOR_STATUS`;
-6. se o reset soft funcionou;
-7. se a recuperação foi temporária ou persistente.
+1. the exact model and BIOS;
+2. Windows version;
+3. connected device;
+4. UCSI state;
+5. `GET_CONNECTOR_STATUS` output;
+6. whether the soft reset worked;
+7. whether recovery was temporary or persistent.
 
-Não publique números de série, nomes de usuário, caminhos pessoais ou relatórios sem revisar os dados.
+Do not publish serial numbers, usernames, personal paths, or unreviewed reports.
 
-## Estrutura
+## Repository structure
 
 ~~~text
 README.md
+README.pt-BR.md
 LICENSE
 CONTRIBUTING.md
 scripts/
@@ -331,14 +334,14 @@ docs/
     same-problem.yml
 ~~~
 
-## Referências oficiais
+## Official references
 
 - [Microsoft: USB-C Connector System Software Interface (UCSI) Driver](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/ucsi)
 - [Microsoft: Tools in the MUTT Software Package](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/mutt-software-package)
 - [Microsoft: USB Hardware Verifier](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/how-to-retrieve-information-about-a-usb-device)
 
-## Licença e responsabilidade
+## License and responsibility
 
-O código deste repositório é distribuído sob a licença MIT. Ferramentas da Microsoft mencionadas ou usadas pelo usuário continuam sujeitas às licenças e condições da Microsoft.
+The code in this repository is distributed under the MIT License. Microsoft tools mentioned or used by the user remain subject to Microsoft's licenses and terms.
 
-Ao executar os scripts, você reconhece que o uso é por sua conta e risco. O autor e os contribuidores não assumem responsabilidade por perda de dados, indisponibilidade, danos a dispositivos, alteração de registro, incompatibilidade, falha de recuperação ou qualquer outro efeito decorrente do uso.
+By running these scripts, you acknowledge that you do so entirely at your own risk. The author and contributors accept no responsibility for data loss, downtime, device damage, registry changes, incompatibility, failed recovery, or any other consequence arising from their use.
