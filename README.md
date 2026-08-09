@@ -37,7 +37,10 @@ The recommended path is always: diagnose first, test manually, observe the behav
 | DisplayPort evidence | `DISPLAY\SAM730E*` |
 | HDMI/hub evidence | `DISPLAY\SAM730B*` |
 | Decisive command | `UcsiControl.exe Send 0 10003` |
-| Observed result | immediate USB-C recovery |
+| Manual result | immediate USB-C recovery without reboot |
+| Automatic boot result | confirmed on 2026-08-09 during a natural failure at startup |
+| Automatic command result | `CommandCompletedIndicator: 1`, `ErrorIndicator: 0`, exit code `0` |
+| Post-reset evidence | SuperSpeed hub, Samsung HDMI display, and ASIX Ethernet adapter re-enumerated about 9 seconds later |
 
 These data describe one validated case, not a compatibility matrix. Another Yoga S740 may have a different BIOS, topology, Windows version, or underlying failure.
 
@@ -184,6 +187,18 @@ If the executable is installed elsewhere:
 .\scripts\install.ps1 -EnableTestInterface -UcsiControlPath 'D:\Tools\USBTest\x64\UcsiControl.exe'
 ~~~
 
+### Confirmed automatic recovery during a real boot failure
+
+On 2026-08-09, the installed Scheduled Task recovered the port automatically during a natural occurrence of the problem at startup. No reboot or manual intervention was used. The task found `ACPI\USBC000\0` in `OK` state, but the expected USB-C devices were absent at the first and second checks. It then sent:
+
+~~~text
+UcsiControl.exe Send 0 10003
+~~~
+
+The tool reported `Command completed successfully`, `ErrorIndicator: 0`, `CommandCompletedIndicator: 1`, and exit code `0`. About nine seconds later, Windows re-enumerated the expected `Generic SuperSpeed USB Hub`, Samsung monitor on HDMI, and ASIX USB-to-Gigabit Ethernet adapter. This confirms the automatic recovery path for this observed case; it is not a universal fix or a guarantee for other systems.
+
+`ResetCompletedIndicator: 0` does not invalidate this result. For this command, the relevant completion evidence was `CommandCompletedIndicator: 1` together with the subsequent physical/PnP enumeration of the USB-C devices.
+
 By default, the installer accepts only `*Yoga S740-14IIL*` as a model. Model validation can be disabled for a deliberate investigation on another computer, but doing so increases the risk:
 
 ~~~powershell
@@ -282,8 +297,9 @@ Uninstallation removes the Scheduled Task and the files under `C:\ProgramData\Us
 | restart UCSI device `ACPI\USBC000\0` | did not recover |
 | UCSI `PPM_RESET`, `Send 0 1` | did not recover |
 | soft UCSI `CONNECTOR_RESET`, `Send 0 10003` | recovered immediately |
+| automatic boot check followed by soft `CONNECTOR_RESET` | recovered naturally at boot on 2026-08-09; no reboot/intervention |
 
-The result points to a stuck state in the connector/Type-C/PD/UCSI/firmware logic, but it does not by itself prove a hardware or firmware root cause.
+The result points to a likely stuck state in the Yoga S740-14IIL connector/Type-C/PD/UCSI/platform-firmware path. It does not prove whether the precise cause belongs to the EC, Type-C/PD controller, Intel platform firmware, Lenovo integration, Windows, or hardware, and it does not establish a universal fix.
 
 ## Safety and limitations
 

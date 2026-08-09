@@ -86,6 +86,12 @@ Gere também:
 
 Não repita o reset em loop.
 
+## A recuperação automática funcionou no boot
+
+Em 2026-08-09, uma ocorrência natural foi recuperada pela tarefa automática sem reboot nem intervenção manual. O log mostrou `ACPI\USBC000\0` como `OK`, ausência dos dispositivos esperados nas duas verificações, `UcsiControl.exe Send 0 10003`, `Command completed successfully`, `ErrorIndicator: 0`, `CommandCompletedIndicator: 1` e código de saída `0`. Cerca de nove segundos depois, o hub SuperSpeed, o monitor Samsung via HDMI e o adaptador Ethernet ASIX apareceram novamente.
+
+Ao interpretar esse resultado, não trate `ResetCompletedIndicator: 0` isoladamente como falha. Para esse comando, `CommandCompletedIndicator: 1` indica que o comando foi concluído; a validação operacional é a enumeração PnP posterior dos dispositivos esperados. Ainda assim, isso confirma apenas este caso observado e não promete recuperação em todos os boots ou equipamentos.
+
 ## O script resetou quando nada estava conectado
 
 Isso ocorre quando a configuração assume que um hub/monitor sempre estará presente. A ausência de evidência não prova que a porta está travada se nada foi conectado.
@@ -126,3 +132,5 @@ Procure assistência técnica ou suporte Lenovo se:
 - o UCSI estiver ausente ou com erro permanente;
 - o reset só funcionar temporariamente e o problema estiver piorando;
 - houver perda de dados, travamentos ou desligamentos.
+
+O comportamento observado é mais compatível com um provável issue de firmware/plataforma Type-C/UCSI do Yoga S740-14IIL do que com uma conclusão categórica sobre Lenovo ou Microsoft. O reset é um workaround de recuperação e não substitui atualização suportada, diagnóstico de hardware ou reparo.

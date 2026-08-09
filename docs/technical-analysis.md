@@ -85,8 +85,28 @@ Os sufixos completos dos InstanceIds variam entre enumerações. Por isso o proj
 | reiniciar ACPI\USBC000\0 | não recuperou |
 | UCSI PPM_RESET, comando Send 0 1 | completou, mas não recuperou |
 | UCSI CONNECTOR_RESET soft, comando Send 0 10003 | recuperou imediatamente |
+| tarefa automática no boot + CONNECTOR_RESET soft | ocorrência natural recuperada em 2026-08-09, sem reboot/intervenção |
 
 O teste decisivo foi reproduzível no notebook investigado: com o hub fisicamente conectado e sem enumeração normal, o comando soft fez o hub voltar.
+
+## Evidência de recuperação automática no boot
+
+Em 2026-08-09, a tarefa automática encontrou uma ocorrência real durante a inicialização, sem que alguém provocasse o estado ou interviesse manualmente. A sequência registrada foi:
+
+~~~text
+UCSI: OK | ACPI\USBC000\0
+Nenhuma evidência conhecida encontrada na primeira verificação.
+Segunda verificação também sem os dispositivos esperados.
+Enviando UCSI CONNECTOR_RESET soft: Send 0 10003
+UcsiControl: Command completed successfully
+UcsiControl: ErrorIndicator: 0
+UcsiControl: CommandCompletedIndicator: 1
+UcsiControl exit code: 0
+~~~
+
+Cerca de nove segundos depois, a enumeração PnP voltou a mostrar o `Generic SuperSpeed USB Hub`, o monitor Samsung conectado por HDMI e o adaptador ASIX USB para Gigabit Ethernet. Portanto, a conclusão de sucesso não veio apenas do código de saída do utilitário: veio da combinação entre o comando concluído e a enumeração física posterior dos dispositivos esperados.
+
+O `ResetCompletedIndicator: 0` não contradiz essa conclusão. Para este `CONNECTOR_RESET` soft, o indicador relevante foi `CommandCompletedIndicator: 1`; a confirmação operacional foi os dispositivos reaparecerem no Windows depois do reset.
 
 ## Estado UCSI antes da recuperação
 
@@ -112,6 +132,7 @@ Não foi provado que:
 - o reset seja seguro em todos os cenários de carregamento e vídeo;
 - a ausência de um dispositivo PnP seja suficiente para diagnosticar a falha quando nada está conectado;
 - o comando substitua uma atualização de BIOS ou reparo físico.
+- a recuperação automática funcione em todos os boots, topologias, docks ou modelos.
 
 ## ACPI e investigação de firmware
 
@@ -151,4 +172,4 @@ ConnectStatus=0 com algo conectado
 Send 0 10003 recupera
 ~~~
 
-Mesmo essa correlação não substituiria uma confirmação do fabricante.
+Mesmo essa correlação não substituiria uma confirmação do fabricante. A evidência atual aponta para um provável estado travado na plataforma Type-C/UCSI/firmware do Yoga S740-14IIL, mas não permite atribuir categoricamente a causa à Lenovo, à Microsoft ou a um componente específico.
