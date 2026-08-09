@@ -63,7 +63,15 @@ Foi enviado:
 
 O hub voltou imediatamente. Não foi necessário reiniciar o Windows, o xHCI, o Thunderbolt ou fazer um hard reset UCSI.
 
-## 7. Automatização
+## 7. Recuperação automática confirmada em ocorrência natural
+
+Em 2026-08-09, a tarefa instalada encontrou o problema durante a inicialização normal, sem reboot adicional e sem intervenção manual. O UCSI continuava em `OK` (`ACPI\USBC000\0`), mas os dispositivos esperados não apareceram na primeira verificação nem após a espera da segunda verificação.
+
+A tarefa enviou `UcsiControl.exe Send 0 10003` e registrou `Command completed successfully`, `ErrorIndicator: 0`, `CommandCompletedIndicator: 1` e código de saída `0`. Cerca de nove segundos depois, o `Generic SuperSpeed USB Hub`, o monitor Samsung via HDMI e o adaptador Ethernet ASIX foram enumerados novamente pelo Windows.
+
+Essa foi uma recuperação automática confirmada em uma ocorrência natural do defeito, não uma demonstração obtida por reboot ou por uma ação manual. `ResetCompletedIndicator: 0` não invalida o resultado: a conclusão relevante foi `CommandCompletedIndicator: 1`, reforçada pela enumeração física/PnP posterior.
+
+## 8. Automatização
 
 Como o notebook normalmente inicia com o hub ou o monitor conectados, uma ausência de qualquer assinatura conhecida após a enumeração é uma sinalização útil. A automação foi desenhada para:
 
@@ -76,6 +84,6 @@ Como o notebook normalmente inicia com o hub ou o monitor conectados, uma ausên
 
 Se a máquina inicia frequentemente sem nada conectado, essa suposição deixa de ser válida e a automação deve ser evitada ou personalizada.
 
-## 8. Conclusão responsável
+## 9. Conclusão responsável
 
-O resultado foi um workaround reproduzível em uma máquina específica. O repositório documenta o caminho até ele para que outras pessoas possam testar a mesma hipótese com seus próprios dados, sem transformar uma observação individual em promessa universal.
+O resultado foi um workaround reproduzível em uma máquina específica, com uma recuperação automática confirmada em uma ocorrência natural no boot. A evidência é compatível com um provável issue de firmware/plataforma Type-C/UCSI do Yoga S740-14IIL, mas não permite atribuir categoricamente a causa à Lenovo, à Microsoft ou a um componente específico. O repositório documenta o caminho até ele para que outras pessoas possam testar a mesma hipótese com seus próprios dados, sem transformar uma observação individual em promessa universal.
