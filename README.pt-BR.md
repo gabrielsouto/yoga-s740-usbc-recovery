@@ -29,6 +29,7 @@ O caminho recomendado é sempre: diagnóstico, teste manual, observação de mai
 | Item | Evidência disponível |
 | --- | --- |
 | Notebook | Lenovo Yoga S740-14IIL |
+| Machine Types | `81RM` (Brasil) e `81RS` |
 | Sistema investigado | Windows 11 x64 |
 | UCSI | `ACPI\USBC000\0`, status `OK` |
 | Cliente UCSI | `UcmUcsiAcpiClient.sys` |
@@ -74,6 +75,8 @@ Get-CimInstance Win32_BIOS |
 Get-PnpDevice -InstanceId 'ACPI\USBC000\0' |
     Format-Table Status,Class,FriendlyName,InstanceId -Auto
 ~~~
+
+No Yoga S740-14IIL, `Win32_ComputerSystem.Model` pode retornar apenas `81RM` ou `81RS` em vez do nome comercial. Os dois Machine Types são aceitos pela validação padrão.
 
 Não use o reset automático em outro modelo sem entender e aceitar o risco. O script bloqueia modelos não validados por padrão.
 
@@ -170,8 +173,9 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 O instalador:
 
 - copia os scripts para `C:\ProgramData\UsbCRecovery`;
+- grava os scripts instalados como UTF-8 com BOM para compatibilidade com Windows PowerShell 5.1;
 - cria o arquivo de configuração;
-- salva o valor anterior de `TestInterfaceEnabled`;
+- salva o valor anterior de `TestInterfaceEnabled` e preserva esse estado original em reinstalações;
 - opcionalmente define `TestInterfaceEnabled=1`;
 - cria a tarefa `USB-C Recovery - Yoga S740`;
 - executa com conta `SYSTEM` e nível elevado;
@@ -199,7 +203,7 @@ A ferramenta informou `Command completed successfully`, `ErrorIndicator: 0`, `Co
 
 `ResetCompletedIndicator: 0` não invalida esse resultado. Para esse comando, a evidência relevante de conclusão foi `CommandCompletedIndicator: 1` junto com a enumeração física/PnP posterior dos dispositivos USB-C.
 
-Por padrão, o instalador aceita somente `*Yoga S740-14IIL*` como modelo. Para uma investigação consciente em outro modelo, a validação pode ser desativada, mas isso aumenta o risco:
+Por padrão, o instalador aceita `81RM`, `81RS` e `*Yoga S740-14IIL*`. Para uma investigação consciente em outro modelo, a validação pode ser desativada, mas isso aumenta o risco:
 
 ~~~powershell
 .\scripts\install.ps1 -EnableTestInterface -SkipModelValidation
@@ -265,6 +269,14 @@ O log fica em:
 ~~~text
 C:\ProgramData\UsbCRecovery\UsbCRecovery.log
 ~~~
+
+Para evitar ambiguidade de codificação ao lê-lo manualmente:
+
+~~~powershell
+Get-Content 'C:\ProgramData\UsbCRecovery\UsbCRecovery.log' -Encoding UTF8 -Tail 50
+~~~
+
+Os scripts instalados são gravados como UTF-8 com BOM para que o `PowerShell.exe` do Windows PowerShell 5.1 preserve corretamente caracteres acentuados nas novas entradas do log. Linhas antigas já corrompidas não são reescritas.
 
 Os códigos principais do script são:
 
@@ -352,6 +364,8 @@ docs/
 
 ## Referências oficiais
 
+- [Lenovo Support: Yoga S740-14IIL Type 81RM](https://pcsupport.lenovo.com/br/pt/products/laptops-and-netbooks/yoga-series/yoga-s740-14iil/81rm)
+- [Lenovo Support: Yoga S740-14IIL Type 81RS](https://pcsupport.lenovo.com/br/pt/products/laptops-and-netbooks/yoga-series/yoga-s740-14iil/81rs)
 - [Microsoft: USB-C Connector System Software Interface (UCSI) Driver](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/ucsi)
 - [Microsoft: Tools in the MUTT Software Package](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/mutt-software-package)
 - [Microsoft: USB Hardware Verifier](https://learn.microsoft.com/en-us/windows-hardware/drivers/usbcon/how-to-retrieve-information-about-a-usb-device)
