@@ -43,9 +43,32 @@ foreach ($scriptName in @('UsbCRecovery.ps1', 'diagnose.ps1', 'reset-usbc.ps1'))
         -Destination (Join-Path $installDir $scriptName)
 }
 
+# Em uma reinstalação, preserve o estado ORIGINAL salvo pela primeira instalação.
+# Caso contrário, TestInterfaceEnabled=1 (definido pelo próprio projeto) passaria
+# a ser registrado como o valor anterior e a desinstalação não conseguiria mais
+# restaurar corretamente a situação pré-instalação.
 $previousValuePresent = $false
 $previousValue = $null
-if (Test-Path -LiteralPath $registryPath) {
+$previousStateLoadedFromConfig = $false
+
+if (Test-Path -LiteralPath $configPath) {
+    try {
+        $existingConfig = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($null -ne $existingConfig.PreviousTestInterfaceValuePresent) {
+            $previousValuePresent = [bool]$existingConfig.PreviousTestInterfaceValuePresent
+            if ($previousValuePresent -and $null -ne $existingConfig.PreviousTestInterfaceValue) {
+                $previousValue = [int]$existingConfig.PreviousTestInterfaceValue
+            }
+            $previousStateLoadedFromConfig = $true
+            Write-Host 'Estado original de TestInterfaceEnabled preservado da instalação existente.'
+        }
+    }
+    catch {
+        Write-Warning "Não foi possível ler o estado anterior da configuração existente: $($_.Exception.Message)"
+    }
+}
+
+if (-not $previousStateLoadedFromConfig -and (Test-Path -LiteralPath $registryPath)) {
     try {
         $old = Get-ItemProperty -Path $registryPath -Name TestInterfaceEnabled -ErrorAction Stop
         $previousValuePresent = $true
