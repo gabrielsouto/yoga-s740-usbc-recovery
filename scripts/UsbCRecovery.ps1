@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$ForceReset,
     [switch]$NoInitialDelay,
     [switch]$AllowUnvalidatedModel
@@ -12,6 +12,11 @@ $ConfigFile = Join-Path $BaseDir 'UsbCRecovery.config.json'
 $DefaultUcsiControl = 'C:\Program Files (x86)\USBTest\x64\UcsiControl.exe'
 $UCSIInstanceId = 'ACPI\USBC000\0'
 $UCSIParametersPath = 'HKLM:\SYSTEM\CurrentControlSet\Enum\ACPI\USBC000\0\Device Parameters'
+$DefaultModelPatterns = @(
+    '81RM'
+    '81RS'
+    '*Yoga S740-14IIL*'
+)
 
 function Ensure-BaseDirectory {
     if (-not (Test-Path -LiteralPath $BaseDir)) {
@@ -34,7 +39,7 @@ function Write-Log {
 
 function Get-RecoveryConfig {
     $defaults = [pscustomobject]@{
-        ModelPatterns = @('*Yoga S740-14IIL*')
+        ModelPatterns = $DefaultModelPatterns
         UcsiControlPath = $DefaultUcsiControl
         Signatures = @(
             'DISPLAY\SAM730B*'
@@ -59,6 +64,16 @@ function Get-RecoveryConfig {
                 $loaded | Add-Member -NotePropertyName $property -NotePropertyValue $defaults.$property
             }
         }
+
+        # Compatibilidade com instalações anteriores a 2026-08-29. A versão
+        # antiga usava apenas o nome comercial, mas o Yoga S740-14IIL pode ser
+        # reportado por Win32_ComputerSystem.Model somente como 81RM ou 81RS.
+        $configuredPatterns = @($loaded.ModelPatterns)
+        if ($configuredPatterns.Count -eq 1 -and [string]$configuredPatterns[0] -eq '*Yoga S740-14IIL*') {
+            $loaded.ModelPatterns = $DefaultModelPatterns
+            Write-Log 'Configuração de modelo antiga detectada; adicionando Machine Types 81RM e 81RS em memória.'
+        }
+
         return $loaded
     }
     catch {
@@ -95,6 +110,7 @@ function Test-ModelAllowed {
 
     foreach ($pattern in @($Config.ModelPatterns)) {
         if ($identity.Model -like [string]$pattern) {
+            Write-Log "Modelo validado: $($identity.Model) | padrão=$pattern"
             return $true
         }
     }

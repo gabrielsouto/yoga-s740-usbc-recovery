@@ -1,4 +1,4 @@
-param(
+﻿param(
     [switch]$EnableTestInterface,
     [switch]$SkipModelValidation,
     [string]$UcsiControlPath = 'C:\Program Files (x86)\USBTest\x64\UcsiControl.exe'
@@ -13,6 +13,21 @@ function Assert-Administrator {
     }
 }
 
+function Copy-PowerShellScriptAsUtf8Bom {
+    param(
+        [Parameter(Mandatory = $true)][string]$Source,
+        [Parameter(Mandatory = $true)][string]$Destination
+    )
+
+    # Windows PowerShell 5.1 interpreta arquivos UTF-8 sem BOM usando a página de
+    # código ANSI do sistema. Como os scripts contêm mensagens em português, isso
+    # pode gerar texto como "inÃ­cio" no log. Grave explicitamente os scripts
+    # instalados como UTF-8 com BOM para que PowerShell.exe 5.1 os leia corretamente.
+    $utf8Bom = New-Object System.Text.UTF8Encoding($true)
+    $text = [IO.File]::ReadAllText($Source, [Text.Encoding]::UTF8)
+    [IO.File]::WriteAllText($Destination, $text, $utf8Bom)
+}
+
 Assert-Administrator
 
 $installDir = Join-Path $env:ProgramData 'UsbCRecovery'
@@ -21,9 +36,12 @@ $configPath = Join-Path $installDir 'UsbCRecovery.config.json'
 $registryPath = 'HKLM:\SYSTEM\CurrentControlSet\Enum\ACPI\USBC000\0\Device Parameters'
 
 New-Item -ItemType Directory -Path $installDir -Force | Out-Null
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'UsbCRecovery.ps1') -Destination (Join-Path $installDir 'UsbCRecovery.ps1') -Force
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'diagnose.ps1') -Destination (Join-Path $installDir 'diagnose.ps1') -Force
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'reset-usbc.ps1') -Destination (Join-Path $installDir 'reset-usbc.ps1') -Force
+
+foreach ($scriptName in @('UsbCRecovery.ps1', 'diagnose.ps1', 'reset-usbc.ps1')) {
+    Copy-PowerShellScriptAsUtf8Bom `
+        -Source (Join-Path $PSScriptRoot $scriptName) `
+        -Destination (Join-Path $installDir $scriptName)
+}
 
 $previousValuePresent = $false
 $previousValue = $null
@@ -47,7 +65,14 @@ else {
     Write-Warning 'TestInterfaceEnabled não foi alterado. Use -EnableTestInterface se UcsiControl exigir a interface de teste.'
 }
 
-$modelPatterns = @('*Yoga S740-14IIL*')
+# A Lenovo identifica o Yoga S740-14IIL pelos Machine Types 81RM (Brasil) e
+# 81RS. Em algumas instalações do Windows, Win32_ComputerSystem.Model retorna
+# somente o Machine Type em vez do nome comercial do notebook.
+$modelPatterns = @(
+    '81RM'
+    '81RS'
+    '*Yoga S740-14IIL*'
+)
 if ($SkipModelValidation) {
     $modelPatterns = @('*')
 }
@@ -87,6 +112,7 @@ Write-Host
 Write-Host 'Instalação concluída.'
 Write-Host "Arquivos: $installDir"
 Write-Host "Tarefa: $taskName"
+Write-Host 'Modelos validados por padrão: Yoga S740-14IIL Machine Types 81RM e 81RS.'
 Write-Host 'O script aguarda 30 segundos no boot, verifica duas vezes e faz no máximo um reset automático.'
 Write-Host 'Teste manual:'
 Write-Host "  & '$installDir\reset-usbc.ps1'"

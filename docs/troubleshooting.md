@@ -13,13 +13,37 @@ Get-CimInstance Win32_ComputerSystem |
     Select-Object Manufacturer,Model
 ~~~
 
-O padrão instalado é *Yoga S740-14IIL*. Se o modelo for outro, isso não significa que o reset seja seguro. A validação pode ser desativada somente para uma investigação consciente:
+O Yoga S740-14IIL pode aparecer em `Win32_ComputerSystem.Model` apenas pelo Machine Type. A Lenovo identifica este modelo como `81RM` no Brasil e `81RS` em outros mercados. Por isso, a configuração padrão aceita exatamente:
+
+~~~text
+81RM
+81RS
+*Yoga S740-14IIL*
+~~~
+
+Se um Yoga S740-14IIL retornar `81RM` ou `81RS`, isso é esperado e não deve exigir `-SkipModelValidation`.
+
+Se o modelo for realmente outro, isso não significa que o reset seja seguro. A validação pode ser desativada somente para uma investigação consciente:
 
 ~~~powershell
 .\scripts\install.ps1 -EnableTestInterface -SkipModelValidation
 ~~~
 
 Não use essa opção em produção sem dados que justifiquem o teste.
+
+## O log mostra `inÃ­cio`, `verificaÃ§Ã£o` ou outros acentos corrompidos
+
+A tarefa agendada usa `PowerShell.exe`, isto é, Windows PowerShell 5.1. Essa versão pode interpretar arquivos UTF-8 sem BOM usando a página de código ANSI do sistema. Quando isso acontece, os próprios textos do script já chegam corrompidos ao arquivo de log.
+
+A partir da correção de 2026-08-29, o instalador grava os scripts em `C:\ProgramData\UsbCRecovery` explicitamente como UTF-8 com BOM antes de criar a tarefa agendada. Reinstale a versão atual para substituir os scripts instalados.
+
+Ao consultar o log manualmente, também é seguro informar a codificação explicitamente:
+
+~~~powershell
+Get-Content 'C:\ProgramData\UsbCRecovery\UsbCRecovery.log' -Encoding UTF8 -Tail 50
+~~~
+
+Linhas antigas que já foram gravadas com texto corrompido não são reescritas; a correção vale para novas execuções.
 
 ## UCSI não encontrado ou não está OK
 
